@@ -1,0 +1,32 @@
+[
+  {
+    "jp": "こんにちは",
+    "romaji": "konnichiwa",
+    "es": "Hola / Buenas tardes"
+  },
+  {
+    "jp": "ありがとう",
+    "romaji": "arigatou",
+    "es": "Gracias"
+  },
+  {
+    "jp": "お願いします",
+    "romaji": "onegaishimasu",
+    "es": "Por favor"
+  },
+  {
+    "jp": "すみません",
+    "romaji": "sumimasen",
+    "es": "Disculpe / Perdón"
+  },
+  {
+    "jp": "はい",
+    "romaji": "hai",
+    "es": "Sí"
+  },
+  {
+    "jp": "いいえ",
+    "romaji": "iie",
+    "es": "No"
+  }
+]

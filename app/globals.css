@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark tokens */
+:root, html[data-theme="dark"] {
+  --bg:#0a0c0f;
+  --header:#0b111a;
+  --panel:#0b111a;
+  --accent:#e11d48;
+  --ink:#fca5a5;
+  --ink-strong:#fecaca;
+}
+/* Paper tokens */
+html[data-theme="paper"] {
+  --bg:#0b0f14;
+  --header:#111827;
+  --panel:#111827;
+  --accent:#d946ef;
+  --ink:#c7d2fe;
+  --ink-strong:#e5e7eb;
+}
+
+html, body { background: var(--bg); color: var(--ink-strong); }
+.container { @apply max-w-6xl mx-auto px-6; }
+.btn { @apply rounded-xl px-4 py-2 font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-transform active:scale-95 drop-shadow; background: var(--accent); }
+.link { @apply underline hover:opacity-90; color: var(--ink); }
+.card-white {
+  border: 1px solid rgba(225,29,72,.15);
+  background: var(--panel);
+  color: var(--ink-strong);
+  border-radius: 1rem; padding: 1.5rem; box-shadow: 0 10px 20px rgba(0,0,0,.15);
+}
+.card-white h1, .card-white h2, .card-white h3 { color: var(--ink-strong); }
+.card-white .small { color: color-mix(in srgb, var(--ink) 70%, #ffffff 0%); }
+.hero {
+  position: relative;
+  background: radial-gradient(40rem 28rem at 85% 30%,
+    rgba(225,29,72,0.08) 0%,
+    rgba(225,29,72,0.04) 45%,
+    rgba(225,29,72,0) 70%
+  );
+}
+.h1 { @apply text-4xl font-extrabold tracking-tight; color: var(--ink-strong); }
+.xp-track { background: rgba(255,255,255,.15); }
+/* a11y */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
