@@ -1,23 +1,60 @@
-'use client';
-import { motion, AnimatePresence } from 'framer-motion';
-import SamuraiBird from './SamuraiBird';
+"use client";
 
-export default function LevelUp({show, level, onClose}:{show:boolean, level:number, onClose:()=>void}){
+import { useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+type LevelUpProps = {
+  show: boolean;
+  onClose: () => void;
+  level?: number;
+  children?: React.ReactNode;
+};
+
+export default function LevelUp({ show, onClose, level, children }: LevelUpProps) {
+  useEffect(() => {
+    if (!show) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [show, onClose]);
+
   return (
     <AnimatePresence>
       {show && (
-        <motion.div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <motion.div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          aria-hidden="true"
+        >
           <motion.div
-            initial={{ scale: 0.8, rotate: -3 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 180, damping: 12 }}
-            className="card-white text-center max-w-sm">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <SamuraiBird mood="wow" size={72}/>
-              <h3 className="text-2xl font-extrabold" style={{color:'var(--ink-strong)'}}>¡Nivel {level}!</h3>
-            </div>
-            <p className="text-sm" style={{color:'var(--ink)'}}>El SenseiBird está orgulloso. ¡Sigue así! 🗡️</p>
-            <button className="btn mt-4" onClick={onClose}>Seguir</button>
+            role="dialog"
+            aria-modal="true"
+            aria-label="Level up"
+            className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-sm w-full text-center"
+            initial={{ scale: 0.9, rotate: -2, opacity: 0 }}
+            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 20 }}
+            onClick={(e) => e.stopPropagation()} // no cerrar al click interno
+          >
+            {children ?? (
+              <>
+                <h2 className="text-2xl font-bold mb-1">¡Subiste de nivel!</h2>
+                {typeof level === "number" && (
+                  <p className="text-lg opacity-80">Nivel {level}</p>
+                )}
+              </>
+            )}
+
+            <button
+              onClick={onClose}
+              className="mt-5 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              Cerrar
+            </button>
           </motion.div>
         </motion.div>
       )}
