@@ -1,5 +1,3 @@
--- Ejecuta esto en el editor SQL de tu proyecto Supabase
-
 create table if not exists public.user_stats (
   id uuid primary key references auth.users(id) on delete cascade,
   xp integer not null default 0,
