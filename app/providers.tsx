@@ -6,20 +6,15 @@ import { ProgressService } from '@/services/progress.service';
 import { StreakService } from '@/services/streak.service';
 import { WebSpeechTTS } from '@/services/tts.webspeech';
 import { SimpleEventBus } from '@/services/eventbus.simple';
-import { SupabaseStatsRepo } from '@/services/stats.repo.supabase';
 import { LocalStatsRepo } from '@/services/stats.repo.local';
-import { supabase } from '@/lib/supabase-browser';
+import { ApiStatsRepo } from '@/services/stats.repo.api';
 
 function useAuth(): IAuth {
+  // Placeholder local auth until FastAPI auth is integrated
   return {
     userId: () => null,
-    onChange: (cb) => {
-      if(!supabase) { cb(null); return () => {}; }
-      const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => cb(session?.user?.id || null));
-      supabase.auth.getSession().then(({data})=> cb(data.session?.user?.id || null));
-      return () => sub?.subscription.unsubscribe();
-    },
-    signOut: async () => { await supabase?.auth.signOut(); }
+    onChange: (cb) => { cb(null); return () => {}; },
+    signOut: async () => { /* no-op */ }
   };
 }
 
@@ -49,10 +44,17 @@ export function ServicesProvider({children}:{children:React.ReactNode}){
   }, []);
 
   const auth = useAuth();
-  const stats = supabase ? new SupabaseStatsRepo() : new LocalStatsRepo();
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const stats: IStatsRepo = apiBase ? new ApiStatsRepo(apiBase) : new LocalStatsRepo();
 
-  // Sync from remote on login
-  useEffect(()=> auth.onChange(setUid), []);
+  // Asignar un uid de dispositivo local para sincronizar con FastAPI
+  useEffect(()=>{
+    const localId = typeof window !== 'undefined' ? localStorage.getItem('device_uid') : null;
+    if(localId){ setUid(localId); return; }
+    const newId = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : String(Date.now());
+    if(typeof window !== 'undefined') localStorage.setItem('device_uid', newId);
+    setUid(newId);
+  }, []);
 
   useEffect(()=>{
     if(!uid) return;
@@ -63,10 +65,8 @@ export function ServicesProvider({children}:{children:React.ReactNode}){
       const localStreak = baseServices.streak.get().count;
       const mergedXp = Math.max(remote.xp, localXp);
       const mergedStreak = Math.max(remote.streak, localStreak);
-      // save back locally
       if(mergedXp !== localXp) baseServices.progress.addXp(mergedXp - localXp);
       if(mergedStreak !== localStreak) {
-        // set directly into local storage to avoid cheating side effects
         localStorage.setItem('streak', String(mergedStreak));
       }
     })();

@@ -1,19 +1,17 @@
-# SenseiBird v0.7 — Supabase (Auth + Cloud Stats)
-- **Login** con Google/GitHub o email (magic link) en `/auth`.
-- **Sync en la nube** de XP y racha en tabla `user_stats` (RLS).
-- **DIP**: `IStatsRepo` + `SupabaseStatsRepo` + `LocalStatsRepo`; `ServicesProvider` sincroniza cuando hay sesión.
+# SenseiBird v0.8 — Local + FastAPI
+- Autenticación de Supabase eliminada. Modo invitado por ahora.
+- Sincronización en la nube removida; se usa almacenamiento local.
+- Se añadió scaffold de backend FastAPI en `backend/` con SQLite.
 
 ## Configuración
-1. Crea un proyecto en Supabase.
-2. Copia `.env.example` a `.env.local` y completa:
+1. Crea `.env.local` con:
 ```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
-3. En Supabase SQL, pega y ejecuta `supabase.sql` (tabla + RLS).
-4. `npm i` y `npm run dev`.
-5. Visita `/auth` para entrar y probar.
+2. Backend (FastAPI): ver `backend/README.md` para instalar y arrancar.
+3. Frontend: `npm i` (si cambiaste deps) y `npm run dev`.
 
-## Cómo funciona la sync
-- Al iniciar sesión, se **fusiona** local↔nube (se toma el **máximo** de XP y racha).
-- Al ganar XP o actualizar racha se **emite un evento** y se **guarda** en la nube.
+## Notas
+- El `middleware` ya no verifica sesión.
+- La UI de `/auth` muestra aviso de migración a FastAPI.
+- Próximo paso: reemplazar `LocalStatsRepo` por llamadas a FastAPI (`/stats/{uid}`).

@@ -26,9 +26,7 @@ spec:
             # Puerto en runtime; Next.js suele usar 3000 por defecto, lo dejamos explícito
             - name: PORT
               value: "3000"
-          envFrom:
-            - secretRef:
-                name: supabase-env
+
           readinessProbe:
             httpGet:
               path: /
