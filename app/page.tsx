@@ -4,7 +4,7 @@ import SamuraiBird from "@/components/SamuraiBird";
 import XPBar from "@/components/XPBar";
 import LevelUp from "@/components/LevelUp";
 import Streak from "@/components/Streak";
-import TrackTitle from "@/components/TrackTitle";
+// El título se inyecta desde NEXT_PUBLIC_APP_TITLE (build time)
 import { useEffect, useState } from "react";
 import { loadXp, levelFromXp } from "@/utils/progression";
 import { loadStreak } from "@/utils/streak";
@@ -33,7 +33,7 @@ export default function Home(){
       <section className="hero card-white flex flex-col md:flex-row items-center gap-6">
         <div className="flex-1">
           <h1 className="h1 flex items-center gap-3">
-            <TrackTitle />
+            {process.env.NEXT_PUBLIC_APP_TITLE || 'SenseiBird'}
           </h1>
           <p style={{color:'var(--ink)'}}>Tu pájaro samurái te guía por kana y frases básicas.</p>
           <div className="mt-2"><Streak count={streak}/></div>
@@ -64,4 +64,3 @@ export default function Home(){
     </div>
   );
 }
-

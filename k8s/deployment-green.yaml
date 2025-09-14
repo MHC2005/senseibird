@@ -20,13 +20,15 @@ spec:
     spec:
       containers:
         - name: web
-          image: senseibird:dev
+          image: senseibird:green
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
             - name: PORT
               value: "3000"
+            - name: NEXT_PUBLIC_APP_TITLE
+              value: "SenseiBird - Aprender Japonés"
             - name: TRACK
               value: "green"
             - name: HOSTNAME

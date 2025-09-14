@@ -5,12 +5,10 @@ import SamuraiBird from "@/components/SamuraiBird";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "@/components/UserMenu";
 import { ServicesProvider } from "./providers";
-import TrackBanner from "@/components/TrackBanner";
 import TrackTitle from "@/components/TrackTitle";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const track = process.env.TRACK;
-  const title = track === 'blue' ? 'SenseiBird - Aprender Chino' : 'SenseiBird - Aprender Japonés';
+  const title = process.env.NEXT_PUBLIC_APP_TITLE || 'SenseiBird';
   const description = 'SenseiBird: práctica diaria con kana y frases.';
   return { title, description };
 }
@@ -20,7 +18,7 @@ export default function Root({children}:{children:React.ReactNode}){
     <html lang="es">
       <body className="min-h-screen flex flex-col">
         <ServicesProvider>
-          <TrackBanner />
+          {/* Banner opcional eliminado; el título dinámico va en TrackTitle */}
           <header className="border-b border-red-900/20" style={{background:'var(--header)'}}>
             <div className="container py-3 flex items-center gap-3 justify-between">
               <div className="flex items-center gap-3">
@@ -50,4 +48,3 @@ export default function Root({children}:{children:React.ReactNode}){
     </html>
   );
 }
-
