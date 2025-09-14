@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: senseibird-api
+  namespace: senseibird
+  labels:
+    app: senseibird
+    tier: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: senseibird
+      tier: api
+  template:
+    metadata:
+      labels:
+        app: senseibird
+        tier: api
+    spec:
+      containers:
+        - name: api
+          image: senseibird-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+

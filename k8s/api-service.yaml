@@ -1,17 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: senseibird-svc
+  name: senseibird-api
   namespace: senseibird
   labels:
     app: senseibird
+    tier: api
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: senseibird
-    track: blue
+    tier: api
   ports:
     - name: http
-      port: 3000
-      targetPort: 3000
-      nodePort: 31000   
+      port: 8000
+      targetPort: 8000
+
