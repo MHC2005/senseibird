@@ -1,19 +1,76 @@
-# SenseiBird v0.7 — Supabase (Auth + Cloud Stats)
-- **Login** con Google/GitHub o email (magic link) en `/auth`.
-- **Sync en la nube** de XP y racha en tabla `user_stats` (RLS).
-- **DIP**: `IStatsRepo` + `SupabaseStatsRepo` + `LocalStatsRepo`; `ServicesProvider` sincroniza cuando hay sesión.
+SenseiBird – Despliegue en Kubernetes con Minikube
 
-## Configuración
-1. Crea un proyecto en Supabase.
-2. Copia `.env.example` a `.env.local` y completa:
-```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-```
-3. En Supabase SQL, pega y ejecuta `supabase.sql` (tabla + RLS).
-4. `npm i` y `npm run dev`.
-5. Visita `/auth` para entrar y probar.
+SenseiBird es una aplicación web que hicimos para el aprendizaje de japonés gamificado. 
+En este proyecto se trabajó en la containerización y el despliegue en Kubernetes usando Minikube en entornos locales.
+Además, se implementó la estrategia de Blue/Green Deployment para realizar actualizaciones sin tiempo de inactividad.
 
-## Cómo funciona la sync
-- Al iniciar sesión, se **fusiona** local↔nube (se toma el **máximo** de XP y racha).
-- Al ganar XP o actualizar racha se **emite un evento** y se **guarda** en la nube.
+Implementación con Minikube
+
+Instalación de dependencias:
+
+Docker
+
+kubectl
+
+Minikube
+
+Inicio del clúster:
+
+minikube start 
+
+Acceso a la aplicación:
+Se expuso el servicio vía NodePort:
+
+minikube service -n senseibird senseibird-svc --url
+
+Se organizaron los manifiestos en un namespace dedicado (senseibird), incluyendo:
+
+Deployment.yaml → despliegue de la app con replicasets.
+
+Service.yaml → expone la aplicación vía NodePort.
+
+Blue/Green Deployment
+
+Para manejar nuevas versiones de la aplicación sin interrumpir a los usuarios, se implementó la estrategia Blue/Green:
+
+senseibird-web-blue → versión activa actual.
+
+senseibird-web-green → nueva versión candidata.
+
+En la versión blue la app se llama Senseibird - Aprende Chino y se ve en el inicio de la página, mientras que en la green dice Senseibird - Aprende Japonés porque el objetivo era reflejar un cambio aunque sea mínimo para reflejar lo aprendido.
+
+Flujo:
+
+Se despliegan ambas versiones en paralelo.
+
+El Service apunta a la versión activa (ej: track: green).
+
+Una vez validada la nueva versión, se cambia el selector del Service al otro despliegue.
+
+Se puede hacer rollback simplemente apuntando de nuevo al deployment anterior.
+
+# Cambiar imagen en blue
+kubectl -n senseibird set image deploy/senseibird-web-blue web=senseibird:blue
+
+# Cambiar imagen en green
+kubectl -n senseibird set image deploy/senseibird-web-green web=senseibird:green
+
+# Reiniciar rollout
+kubectl -n senseibird rollout restart deploy/senseibird-web-green
+
+# Ver estado
+kubectl -n senseibird rollout status deploy/senseibird-web-green
+
+En resúmen:
+
+Minikube se utilizó como entorno de prueba local.
+
+Kubernetes gestionó los despliegues, servicios y namespaces.
+
+Se implementó un flujo de Blue/Green Deployment que permite:
+
+Subir nuevas versiones sin downtime.
+
+Validar cambios antes de exponerlos a usuarios.
+
+Hacer rollback inmediato si es necesario.

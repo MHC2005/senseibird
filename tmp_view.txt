@@ -9,7 +9,7 @@ spec:
   type: NodePort
   selector:
     app: senseibird
-    track: green
+    track: blue
   ports:
     - name: http
       port: 3000
