@@ -1,10 +1,10 @@
-SenseiBird – Despliegue en Kubernetes con Minikube
+# SenseiBird – Despliegue en Kubernetes con Minikube
 
 SenseiBird es una aplicación web que hicimos para el aprendizaje de japonés gamificado. 
 En este proyecto se trabajó en la containerización y el despliegue en Kubernetes usando Minikube en entornos locales.
 Además, se implementó la estrategia de Blue/Green Deployment para realizar actualizaciones sin tiempo de inactividad.
 
-Implementación con Minikube
+# Implementación con Minikube
 
 Instalación de dependencias:
 
@@ -14,7 +14,7 @@ kubectl
 
 Minikube
 
-Inicio del clúster:
+# Inicio del clúster:
 
 minikube start 
 
@@ -39,7 +39,7 @@ senseibird-web-green → nueva versión candidata.
 
 En la versión blue la app se llama Senseibird - Aprende Chino y se ve en el inicio de la página, mientras que en la green dice Senseibird - Aprende Japonés porque el objetivo era reflejar un cambio aunque sea mínimo para reflejar lo aprendido.
 
-Flujo:
+# Flujo:
 
 Se despliegan ambas versiones en paralelo.
 
