@@ -19,8 +19,7 @@ export default function TrackBanner(){
   if(!track) return null;
   const isGreen = track === 'green';
   const bannerClass = isGreen ? 'bg-green-600' : track === 'blue' ? 'bg-blue-600' : '';
-  // Blue => Chino, Green => Japonés
-  const phrase = track === 'blue' ? 'SenseiBird - Aprender Chino' : 'SenseiBird - Aprender Japonés';
+  const phrase = 'SenseiBird';
   return (
     <div className={`${bannerClass} text-white text-sm md:text-base text-center py-2 font-semibold`}>
       {phrase}
