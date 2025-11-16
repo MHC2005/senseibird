@@ -19,7 +19,7 @@ pipeline {
             docker run --rm \
             -v $WORKSPACE:/src \
             -w /src semgrep/semgrep \
-            semgrep --config semgrep_rules.yaml .
+            --config semgrep_rules.yaml .
             '''
         }
     }
