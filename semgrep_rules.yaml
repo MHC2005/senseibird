@@ -1,6 +1,7 @@
 rules:
   - id: test-rule
     message: "Semgrep está funcionando"
-    pattern: console.log(...)
-    languages: [javascript]
-    severity: WARNING
+    languages: ["javascript"]
+    severity: "WARNING"
+    pattern: |
+      console.log(...)
