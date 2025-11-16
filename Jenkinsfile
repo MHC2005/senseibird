@@ -27,5 +27,46 @@ pipeline {
             }
         }
 
+        stage('Build Frontend') {
+            steps {
+                sh '''
+                echo "Building frontend..."
+                cd frontend
+                npm install
+                npm run build
+                '''
+            }
+        }
+
+        stage('Build Backend (Optional)') {
+            steps {
+                sh '''
+                echo "Installing backend dependencies..."
+                cd backend
+                pip install -r requirements.txt || true
+                '''
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB',
+                                                  usernameVariable: 'DOCKER_USER',
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+
+                    sh '''
+                    echo "Logging into Docker Hub..."
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+                    echo "Building Docker image..."
+                    docker build -t $DOCKER_USER/senseibird:latest .
+
+                    echo "Pushing Docker image..."
+                    docker push $DOCKER_USER/senseibird:latest
+                    '''
+                }
+            }
+        }
+
     }
 }
