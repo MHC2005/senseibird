@@ -3,9 +3,7 @@ pipeline {
   options {
     timestamps()
   }
-
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -13,31 +11,28 @@ pipeline {
     }
 
     stage('Semgrep Static Analysis') {
-      steps {
-        sh '''
-          echo "Running Semgrep..."
-          docker run --rm \
-            -v $WORKSPACE:/src \
-            -w /src \
-            semgrep/semgrep semgrep --config semgrep_rules.yaml . || true
-        '''
-      }
+        steps {
+            sh """
+            echo "Running Semgrep..."
+            semgrep --config semgrep_rules.yaml || true
+            """
+        }
     }
 
     stage('Snyk Dependency Scan') {
-      steps {
+    steps {
         withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-          sh '''
-            echo "Running Snyk scan..."
+            sh """
+            cd backend
             docker run --rm \
               -e SNYK_TOKEN=$SNYK_TOKEN \
-              -v $WORKSPACE/backend:/project \
-              snyk/snyk:python \
-              test --file=/project/requirements.txt || true
-          '''
+              -v "\$(pwd):/project" \
+              snyk/snyk:python test --file=/project/requirements.txt || true
+            """
         }
-      }
     }
+}
+
 
   }
 }
