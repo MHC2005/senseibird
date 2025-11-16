@@ -20,28 +20,32 @@ pipeline {
 
         stage('Node Build & Test') {
             steps {
-                sh """
-                    set -e
-                    docker run --rm \\
-                      -v "\\${PWD}":/workspace \\
-                      -w /workspace \\
-                      node:20-bullseye \\
-                      bash -c "npm ci && npm run lint && npm run test && npm run build"
-                """
+                script {
+                    sh """
+                        set -e
+                        docker run --rm \\
+                          -v "${env.WORKSPACE}":/workspace \\
+                          -w /workspace \\
+                          node:20-bullseye \\
+                          bash -lc "npm ci && npm run lint && npm run test && npm run build"
+                    """
+                }
             }
         }
 
         stage('Semgrep Scan') {
             steps {
-                sh """
-                    set -e
-                    docker run --rm \\
-                      -v "\\${PWD}":/workspace \\
-                      -w /workspace \\
-                      -e SEMGREP_RULESET="${SEMGREP_RULESET}" \\
-                      semgrep/semgrep:latest \\
-                      bash -c "semgrep --config \\${SEMGREP_RULESET} --error --json > semgrep-report.json"
-                """
+                script {
+                    sh """
+                        set -e
+                        docker run --rm \\
+                          -v "${env.WORKSPACE}":/workspace \\
+                          -w /workspace \\
+                          -e SEMGREP_RULESET="${env.SEMGREP_RULESET}" \\
+                          semgrep/semgrep:latest \\
+                          bash -lc "semgrep --config \\${SEMGREP_RULESET} --error --json > semgrep-report.json"
+                    """
+                }
                 archiveArtifacts artifacts: 'semgrep-report.json', fingerprint: true
             }
         }
