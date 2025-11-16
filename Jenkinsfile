@@ -1,42 +1,63 @@
 pipeline {
-  agent any
-  options {
-    timestamps()
-  }
+    agent any
 
-  stages {
-
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    options {
+        timestamps()
+        ansiColor('xterm')
+        skipDefaultCheckout(true)
     }
 
-    stage('Semgrep Static Analysis') {
-      steps {
-        sh '''
-        echo "Running Semgrep..."
-        docker run --rm \
-          -v $WORKSPACE:/src \
-          -w /src semgrep/semgrep \
-          semgrep --config=semgrep_rules.yaml --recursive .
-        '''
-      }
+    environment {
+        NODE_ENV = 'production'
+        SEMGREP_RULESET = "${WORKSPACE}/semgrep_rules.yaml"
     }
 
-    stage('Snyk Dependency Scan') {
-      steps {
-        withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-          sh '''
-            echo "Running Snyk scan..."
-            docker run --rm \
-              -e SNYK_TOKEN=$SNYK_TOKEN \
-              -v $WORKSPACE/backend:/project \
-              snyk/snyk:python test --file=/project/requirements.txt || true
-          '''
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
         }
-      }
+
+        stage('Install dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh 'npm run lint'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm run test'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        stage('Semgrep Scan') {
+            steps {
+                sh '''
+                    python3 -m pip install --user --upgrade semgrep
+                    export PATH="$HOME/.local/bin:$PATH"
+                    semgrep --config "${SEMGREP_RULESET}" --error --json > semgrep-report.json
+                '''
+                archiveArtifacts artifacts: 'semgrep-report.json', fingerprint: true
+            }
+        }
     }
 
-  }
+    post {
+        always {
+            echo 'Pipeline finished.'
+        }
+    }
 }
