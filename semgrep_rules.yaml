@@ -4,4 +4,4 @@ rules:
     languages: ["javascript"]
     severity: "WARNING"
     pattern: |
-      console.log(...)
+      console.log($X)
