@@ -8,7 +8,11 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "*/entregable4"]],
+                    userRemoteConfigs: [[url: "https://github.com/MHC2005/senseibird.git"]],
+                    extensions: [[$class: 'CloneOption', shallow: false, noTags: false]]
+                ])
             }
         }
 
@@ -17,18 +21,20 @@ pipeline {
                 sh '''
                 echo "Running Semgrep..."
                 ls -lah .
-                echo "Contenido de semgrep_rules.yaml:"
                 cat semgrep_rules.yaml
 
                 docker run --rm \
-                -v $WORKSPACE:/src \
-                -w /src \
-                semgrep/semgrep \
-                semgrep scan --config=/src/semgrep_rules.yaml /src
+                  -v $WORKSPACE:/src \
+                  -w /src \
+                  semgrep/semgrep \
+                  semgrep scan \
+                    --config=/src/semgrep_rules.yaml \
+                    --no-git \
+                    --no-git-ignore \
+                    /src
                 '''
             }
         }
-
 
     }
 }
