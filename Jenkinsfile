@@ -12,18 +12,17 @@ pipeline {
       }
     }
 
-    stage('Semgrep Static Analysis') {
-        steps {
-            sh '''
-            echo "Running Semgrep..."
-            docker run --rm \
-            -v $WORKSPACE:/src \
-            -w /src semgrep/semgrep \
-            --config semgrep_rules.yaml .
-            '''
+   stage('Semgrep Static Analysis') {
+    steps {
+        sh '''
+        echo "Running Semgrep..."
+        docker run --rm \
+          -v $WORKSPACE:/src \
+          -w /src semgrep/semgrep \
+          semgrep scan --config semgrep_rules.yaml .
+        '''
         }
     }
-
 
     stage('Snyk Dependency Scan') {
       steps {
