@@ -1,7 +1,38 @@
 rules:
-  - id: test-rule
-    message: "Semgrep está funcionando"
-    languages: ["javascript"]
-    severity: "WARNING"
+  - id: no-eval
+    patterns:
+      - pattern: eval($X)
+    message: "Uso de eval detectado. Evitar su uso por motivos de seguridad."
+    languages:
+      - javascript
+      - python
+    severity: ERROR
+
+  - id: detect-hardcoded-secret
+    pattern-regex: "(secret|password|apikey|token)[^\\n]*[=:][^\\n]+"
+    message: "Posible secreto hardcodeado detectado."
+    languages:
+      - javascript
+      - python
+    severity: WARNING
+
+  - id: insecure-http
     pattern: |
-      console.log($X)
+      fetch("http://", ...)
+    message: "Llamada a HTTP insegura. Considera usar HTTPS."
+    languages: [javascript]
+    severity: WARNING
+
+  - id: no-debug-flask
+    pattern: |
+      app.run(debug=True)
+    message: "Flask con debug=True expone información sensible."
+    languages: [python]
+    severity: ERROR
+
+  - id: express-no-direct-user-input
+    pattern: |
+      $VAR = req.body
+    message: "Validar siempre input del usuario en Express."
+    languages: [javascript]
+    severity: INFO
