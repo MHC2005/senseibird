@@ -17,7 +17,7 @@ pipeline {
 
         stage('Snyk Dependency Scan') {
             steps {
-                withCredentials([string(credentialsId: 'a02a4dc3-8191-4ee3-b81f-7365325765d3', variable: 'SNYK_TOKEN')]) {
+                withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
                     sh '''
                     echo "Running Snyk..."
                     snyk auth $SNYK_TOKEN
