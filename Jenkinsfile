@@ -20,7 +20,7 @@ pipeline {
     }
 
     stage('Snyk Dependency Scan') {
-        withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+        withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
             sh '''
                 echo "Running Snyk scan..."
                 docker run --rm \
