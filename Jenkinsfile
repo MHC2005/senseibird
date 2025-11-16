@@ -17,9 +17,10 @@ pipeline {
         sh '''
           echo "Running Semgrep..."
           docker run --rm \
-            -v "$(pwd)":/src \
+            -v $WORKSPACE:/src \
+            -v $WORKSPACE/semgrep_rules.yaml:/tmp/semgrep_rules.yaml \
             -w /src \
-            semgrep/semgrep semgrep --config semgrep_rules.yaml . || true
+            semgrep/semgrep semgrep --config /tmp/semgrep_rules.yaml . || true
         '''
       }
     }
