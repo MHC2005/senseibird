@@ -18,51 +18,30 @@ pipeline {
             }
         }
 
-        stage('Node CI') {
-            agent {
-                docker {
-                    image 'node:20-bullseye'
-                    args '-u root:root'
-                }
-            }
-            stages {
-                stage('Install dependencies') {
-                    steps {
-                        sh 'npm ci'
-                    }
-                }
-
-                stage('Lint') {
-                    steps {
-                        sh 'npm run lint'
-                    }
-                }
-
-                stage('Test') {
-                    steps {
-                        sh 'npm run test'
-                    }
-                }
-
-                stage('Build') {
-                    steps {
-                        sh 'npm run build'
+        stage('Node Build & Test') {
+            steps {
+                script {
+                    docker.image('node:20-bullseye').inside('-u root:root') {
+                        sh '''
+                            npm ci
+                            npm run lint
+                            npm run test
+                            npm run build
+                        '''
                     }
                 }
             }
         }
 
         stage('Semgrep Scan') {
-            agent {
-                docker {
-                    image 'semgrep/semgrep:latest'
-                    args '-u root:root'
-                }
-            }
             steps {
-                sh '''
-                    semgrep --config "${SEMGREP_RULESET}" --error --json > semgrep-report.json
-                '''
+                script {
+                    docker.image('semgrep/semgrep:latest').inside('-u root:root') {
+                        sh '''
+                            semgrep --config "${SEMGREP_RULESET}" --error --json > semgrep-report.json
+                        '''
+                    }
+                }
                 archiveArtifacts artifacts: 'semgrep-report.json', fingerprint: true
             }
         }
