@@ -19,15 +19,16 @@ pipeline {
         }
     }
 
-    stage('Snyk Dependency Scan') {
+stage('Snyk Dependency Scan') {
     steps {
         withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
             sh """
-            cd backend
+            echo "Running Snyk..."
             docker run --rm \
               -e SNYK_TOKEN=$SNYK_TOKEN \
-              -v "\$(pwd):/project" \
-              snyk/snyk:python test --file=/project/requirements.txt || true
+              -v "$WORKSPACE/backend:/project" \
+              snyk/snyk:python \
+              bash -c "snyk test --file=/project/requirements.txt || true"
             """
         }
     }
