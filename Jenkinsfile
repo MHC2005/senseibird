@@ -12,18 +12,6 @@ pipeline {
       }
     }
 
-    stage('Debug Workspace') {
-        steps {
-            sh '''
-            echo "Listing Jenkins workspace:"
-            ls -la
-
-            echo "Searching for semgrep_rules.yaml:"
-            find . -name "semgrep_rules.yaml" || echo "File not found"
-            '''
-        }
-    }
-
     stage('Semgrep Static Analysis') {
         steps {
             sh '''
@@ -35,6 +23,7 @@ pipeline {
             '''
         }
     }
+
 
     stage('Snyk Dependency Scan') {
       steps {
