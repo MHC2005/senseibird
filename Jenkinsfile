@@ -18,35 +18,49 @@ pipeline {
             }
         }
 
-        stage('Install dependencies') {
-            steps {
-                sh 'npm ci'
+        stage('Node CI') {
+            agent {
+                docker {
+                    image 'node:20-bullseye'
+                    args '-u root:root'
+                }
             }
-        }
+            stages {
+                stage('Install dependencies') {
+                    steps {
+                        sh 'npm ci'
+                    }
+                }
 
-        stage('Lint') {
-            steps {
-                sh 'npm run lint'
-            }
-        }
+                stage('Lint') {
+                    steps {
+                        sh 'npm run lint'
+                    }
+                }
 
-        stage('Test') {
-            steps {
-                sh 'npm run test'
-            }
-        }
+                stage('Test') {
+                    steps {
+                        sh 'npm run test'
+                    }
+                }
 
-        stage('Build') {
-            steps {
-                sh 'npm run build'
+                stage('Build') {
+                    steps {
+                        sh 'npm run build'
+                    }
+                }
             }
         }
 
         stage('Semgrep Scan') {
+            agent {
+                docker {
+                    image 'semgrep/semgrep:latest'
+                    args '-u root:root'
+                }
+            }
             steps {
                 sh '''
-                    python3 -m pip install --user --upgrade semgrep
-                    export PATH="$HOME/.local/bin:$PATH"
                     semgrep --config "${SEMGREP_RULESET}" --error --json > semgrep-report.json
                 '''
                 archiveArtifacts artifacts: 'semgrep-report.json', fingerprint: true
