@@ -3,7 +3,9 @@ pipeline {
   options {
     timestamps()
   }
+
   stages {
+
     stage('Checkout') {
       steps {
         checkout scm
@@ -11,15 +13,12 @@ pipeline {
     }
 
     stage('Semgrep Static Analysis') {
-    steps {
+      steps {
         sh '''
-        echo "Running Semgrep..."
-        docker run --rm \
-            -v "$(pwd)":/src \
-            -w /src \
-            semgrep/semgrep semgrep --config semgrep_rules.yaml .
+          echo "Running Semgrep..."
+          semgrep --config semgrep_rules.yaml .
         '''
-    }
+      }
     }
 
   }
