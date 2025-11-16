@@ -10,7 +10,7 @@ pipeline {
             steps {
                 sh '''
                 echo "Running Semgrep..."
-                semgrep scan --config=semgrep_rules.yaml --no-git .
+                semgrep scan --config=semgrep_rules.yaml .
                 '''
             }
         }
