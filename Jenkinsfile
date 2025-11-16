@@ -23,6 +23,7 @@ pipeline {
         steps {
             withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
                 sh """
+                cd backend
                 echo "Running Snyk..."
                 docker run --rm \
                 -e SNYK_TOKEN=$SNYK_TOKEN \
