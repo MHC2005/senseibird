@@ -18,7 +18,8 @@ pipeline {
           echo "Running Semgrep..."
           docker run --rm \
             -v $WORKSPACE:/src \
-            semgrep/semgrep semgrep --config semgrep_rules.yaml || true
+            -w /src \
+            semgrep/semgrep semgrep --config semgrep_rules.yaml . || true
         '''
       }
     }
