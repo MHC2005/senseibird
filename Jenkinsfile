@@ -31,14 +31,13 @@ pipeline {
             steps {
                 sh '''
                 echo "Building frontend..."
-                cd frontend
                 npm install
                 npm run build
                 '''
             }
         }
 
-        stage('Build Backend (Optional)') {
+        stage('Build Backend') {
             steps {
                 sh '''
                 echo "Installing backend dependencies..."
