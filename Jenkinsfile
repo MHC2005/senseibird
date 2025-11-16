@@ -9,5 +9,15 @@ pipeline {
         checkout scm
       }
     }
+
+    stage('Semgrep Static Analysis') {
+        steps {
+            sh """
+            echo "Running Semgrep..."
+            semgrep --config semgrep_rules.yaml || true
+            """
+        }
+    }
+    
   }
 }
