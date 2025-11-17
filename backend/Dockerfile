@@ -15,7 +15,7 @@ RUN python3 -m venv /app/.venv
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY backend/requirements.txt .
+COPY requirements.txt .
 
 RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
@@ -34,7 +34,7 @@ COPY --from=builder /app/.venv /app/.venv
 # ajustar PATH para usar la venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY backend/ .
+COPY . .
 
 # permisos
 RUN chown -R appuser:appgroup /app
