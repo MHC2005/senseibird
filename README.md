@@ -1,76 +1,142 @@
-# SenseiBird – Despliegue en Kubernetes con Minikube
+# SenseiBird – CI/CD, Kubernetes y Observabilidad
 
-SenseiBird es una aplicación web que hicimos para el aprendizaje de japonés gamificado. 
-En este proyecto se trabajó en la containerización y el despliegue en Kubernetes usando Minikube en entornos locales.
-Además, se implementó la estrategia de Blue/Green Deployment para realizar actualizaciones sin tiempo de inactividad.
+SenseiBird es una aplicación web para aprendizaje de idiomas que combina un frontend Next.js y un backend FastAPI. Este repositorio contiene todo el flujo DevOps:
 
-# Implementación con Minikube
+- **Pipeline Jenkins** con análisis estático y build/push de imágenes.
+- **Dockerfiles** listos para frontend y backend.
+- **Manifiestos de Kubernetes** para desplegar en Minikube con estrategia Blue/Green.
+- **Stack de monitoreo** compuesto por Prometheus + Grafana, más un dashboard exportado.
 
-Instalación de dependencias:
+---
 
-Docker
+## 1. Pipeline Jenkins
 
-kubectl
+Archivo: `Jenkinsfile`
 
-Minikube
+| Stage | Descripción |
+| --- | --- |
+| `Semgrep Static Analysis` | Ejecuta `semgrep scan --config=semgrep_rules.yaml .` |
+| `Snyk Dependency Scan` | Usa el token `SNYK_TOKEN` para `snyk test --all-projects` |
+| `Build Frontend` | Instala dependencias y corre `npm run build` |
+| `Build Backend` | Instala requirements del API (`pip install -r backend/requirements.txt`) |
+| `Docker Build & Push` | Login en Docker Hub (`DOCKER_HUB` creds), `docker build` y `docker push` de la imagen `senseibird:latest` |
 
-# Inicio del clúster:
+El pipeline corre en cualquier agente Jenkins y deja trazas con `timestamps()` para facilitar auditoría.
 
-minikube start 
+---
 
-Acceso a la aplicación:
-Se expuso el servicio vía NodePort:
+## 2. Construcción de imágenes locales
 
-minikube service -n senseibird senseibird-svc --url
+```powershell
+# Cambiar daemon a Minikube (PowerShell)
+minikube -p minikube docker-env --shell powershell | Invoke-Expression
 
-Se organizaron los manifiestos en un namespace dedicado (senseibird), incluyendo:
+# Frontend
+docker build -t senseibird-web:1.0.0 .
 
-Deployment.yaml → despliegue de la app con replicasets.
+# Backend
+docker build -t senseibird-api:1.0.0 -f backend/Dockerfile backend
 
-Service.yaml → expone la aplicación vía NodePort.
+# Volver al daemon original
+minikube docker-env --shell powershell -u | Invoke-Expression
+```
 
-Blue/Green Deployment
+Si trabajás con Docker fuera de Minikube, luego ejecutá:
+```
+minikube image load senseibird-web:1.0.0
+minikube image load senseibird-api:1.0.0
+```
 
-Para manejar nuevas versiones de la aplicación sin interrumpir a los usuarios, se implementó la estrategia Blue/Green:
+---
 
-senseibird-web-blue → versión activa actual.
+## 3. Despliegue en Kubernetes (`namespace: senseibird`)
 
-senseibird-web-green → nueva versión candidata.
+1. `kubectl apply -f k8s/namespace.yaml`
+2. Backend: `kubectl apply -f k8s/api-deployment.yaml` + `k8s/api-service.yaml`
+3. Frontend: `kubectl apply -f k8s/deployment.yaml` + `k8s/service.yaml`
+4. Verifica: `kubectl get pods,svc -n senseibird`
+5. Acceso al front: `minikube service senseibird-svc -n senseibird --url` (NodePort 31000)
 
-En la versión blue la app se llama Senseibird - Aprende Chino y se ve en el inicio de la página, mientras que en la green dice Senseibird - Aprende Japonés porque el objetivo era reflejar un cambio aunque sea mínimo para reflejar lo aprendido.
+### Estrategia Blue/Green
 
-# Flujo:
+- Deploys: `k8s/deployment-blue.yaml` y `k8s/deployment-green.yaml` (labels `track=blue/green`).
+- El Service (`k8s/service.yaml`) apunta al track activo; cambiar el selector rota el tráfico sin downtime.
+- Comandos útiles:
+  ```bash
+  kubectl -n senseibird set image deploy/senseibird-web-blue web=senseibird:blue
+  kubectl -n senseibird set image deploy/senseibird-web-green web=senseibird:green
+  kubectl -n senseibird rollout restart deploy/senseibird-web-green
+  kubectl -n senseibird rollout status deploy/senseibird-web-green
+  ```
 
-Se despliegan ambas versiones en paralelo.
+---
 
-El Service apunta a la versión activa (ej: track: green).
+## 4. Backend FastAPI y métricas
 
-Una vez validada la nueva versión, se cambia el selector del Service al otro despliegue.
+`backend/app/main.py` expone:
 
-Se puede hacer rollback simplemente apuntando de nuevo al deployment anterior.
+- `GET /health`
+- `GET/POST /stats/{uid}` (persistencia SQLite)
+- `GET /metrics` (instrumentado con `prometheus_fastapi_instrumentator`)
+- Métrica de negocio `senseibird_updates_total` que aumenta en cada POST.
 
-# Cambiar imagen en blue
-kubectl -n senseibird set image deploy/senseibird-web-blue web=senseibird:blue
+Para probar rápidamente:
+```powershell
+kubectl port-forward svc/senseibird-api -n senseibird 8000:8000
+```
+Luego usar Postman/curl contra `http://localhost:8000/...`.
 
-# Cambiar imagen en green
-kubectl -n senseibird set image deploy/senseibird-web-green web=senseibird:green
+---
 
-# Reiniciar rollout
-kubectl -n senseibird rollout restart deploy/senseibird-web-green
+## 5. Prometheus + Grafana (namespace `monitoring`)
 
-# Ver estado
-kubectl -n senseibird rollout status deploy/senseibird-web-green
+### Prometheus (`k8s/prometheus-deployment.yaml`)
 
-En resúmen:
+- ConfigMap con `scrape_configs` para:
+  - `senseibird-api` (`/metrics`)
+  - `kubelet` y `kubelet-cadvisor` a través del API server (métricas de CPU/Memoria por pod).
+  - Auto-scrape de Prometheus.
+- Incluye `ServiceAccount`, `ClusterRole` y `ClusterRoleBinding`.
+- Service NodePort `30900`.
+- Despliegue: `kubectl apply -f k8s/monitoring.yaml && kubectl apply -f k8s/prometheus-deployment.yaml`
+- Acceso: `minikube service prometheus -n monitoring --url`
 
-Minikube se utilizó como entorno de prueba local.
+### Grafana (`k8s/grafana.yaml`)
 
-Kubernetes gestionó los despliegues, servicios y namespaces.
+- Secret `grafana-admin` (`admin/superSecret123`).
+- ConfigMap `grafana-datasources` apuntando al Service de Prometheus.
+- Service NodePort `32000`.
+- Acceso: `minikube service grafana -n monitoring --url`
 
-Se implementó un flujo de Blue/Green Deployment que permite:
+### Dashboard (`grafana/dashboard.json`)
 
-Subir nuevas versiones sin downtime.
+Este JSON contiene el tablero exigido en el práctico, con al menos:
 
-Validar cambios antes de exponerlos a usuarios.
+1. **Número de peticiones procesadas (RPS)**: `sum(rate(http_requests_total{handler!="/metrics"}[5m])) by (handler,method)`
+2. **Latencia promedio / p95**: `rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])` o `histogram_quantile`.
+3. **Uso de CPU/Mem por pod**: `sum(rate(container_cpu_usage_seconds_total{pod=~"senseibird-.*"}[5m])) by (pod)` y `container_memory_usage_bytes`.
+4. **Métrica de negocio**: `senseibird_updates_total` y su rate.
 
-Hacer rollback inmediato si es necesario.
+Importá el archivo en Grafana (Dashboards → Import → Upload JSON) y seleccioná el datasource “Prometheus”.
+
+---
+
+## 6. Verificación & Troubleshooting
+
+- **Pods sin endpoints**: revisá labels vs `selector` en `k8s/service.yaml`.
+- **ErrImagePull**: asegurar que la imagen existe en el daemon de Minikube (`minikube image load ...`).
+- **Grafana “No data”**: confirmar targets en Prometheus (`Status → Targets`) y generar tráfico con Postman.
+- **Reiniciar deployments tras rebuild**:
+  ```powershell
+  kubectl rollout restart deploy/senseibird-web -n senseibird
+  kubectl rollout restart deploy/senseibird-api -n senseibird
+  kubectl rollout restart deploy/prometheus -n monitoring
+  kubectl rollout restart deploy/grafana -n monitoring
+  ```
+
+Con este set-up se cumple el práctico: CI/CD con Jenkins, despliegue containerizado en Kubernetes (Blue/Green), y observabilidad completa con Prometheus + Grafana y el dashboard exportado en `grafana/dashboard.json`.
+
+
+
+
+## Desarrollado por Mateo Hernández y Agustín Pose
