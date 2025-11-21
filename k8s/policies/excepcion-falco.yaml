@@ -1,0 +1,20 @@
+apiVersion: kyverno.io/v2beta1
+kind: PolicyException
+metadata:
+  name: allow-falco
+  namespace: falco
+spec:
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+          namespaces:
+            - falco
+  exceptions:
+    - policyName: disallow-root
+      ruleNames: ["restrict-root"]
+    - policyName: require-readonly-rootfs
+      ruleNames: ["enforce-readonly-rootfs"]
+    - policyName: require-resources
+      ruleNames: ["check-resources"]
