@@ -1,0 +1,8 @@
+backend:
+  replicas: 3
+frontend:
+  replicas: 3
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
