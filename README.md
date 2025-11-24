@@ -90,22 +90,21 @@ Luego usar Postman/curl contra `http://localhost:8000/...`.
 
 ## 5. Prometheus + Grafana (namespace `monitoring`)
 
-### Prometheus (`k8s/prometheus-deployment.yaml`)
+### Prometheus (Helm → `monitoring.prometheus`)
 
-- ConfigMap con `scrape_configs` para:
-  - `senseibird-api` (`/metrics`)
-  - `kubelet` y `kubelet-cadvisor` a través del API server (métricas de CPU/Memoria por pod).
-  - Auto-scrape de Prometheus.
-- Incluye `ServiceAccount`, `ClusterRole` y `ClusterRoleBinding`.
-- Service NodePort `30900`.
-- Despliegue: `kubectl apply -f k8s/monitoring.yaml && kubectl apply -f k8s/prometheus-deployment.yaml`
+Los recursos de Prometheus se generan desde `helm/templates/monitoring.yaml` y se parametrizan en `values*.yaml` bajo `monitoring.prometheus`.
+
+- ConfigMap con `scrape_configs` para `senseibird-api`, kubelet y kubelet-cadvisor.
+- `ServiceAccount` + RBAC y `Deployment` con la imagen `prom/prometheus:v2.52.0`.
+- Service NodePort `30900` (configurable vía `monitoring.prometheus.nodePort`).
+- Despliegue/actualización: `helm upgrade --install senseibird ./helm --namespace senseibird --create-namespace` (Prometheus se crea igual en el namespace `monitoring` definido en los values).
 - Acceso: `minikube service prometheus -n monitoring --url`
 
-### Grafana (`k8s/grafana.yaml`)
+### Grafana (Helm → `monitoring.grafana`)
 
-- Secret `grafana-admin` (`admin/superSecret123`).
-- ConfigMap `grafana-datasources` apuntando al Service de Prometheus.
-- Service NodePort `32000`.
+- Secret `grafana-admin` y ConfigMap `grafana-datasources` gestionados por el chart.
+- Deployment `grafana/grafana:10.4.2` con datasource apuntando al Service de Prometheus.
+- Service NodePort `32000` configurable en `monitoring.grafana.nodePort`.
 - Acceso: `minikube service grafana -n monitoring --url`
 
 ### Dashboard (`grafana/dashboard.json`)

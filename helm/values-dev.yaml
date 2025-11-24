@@ -1,0 +1,4 @@
+backend:
+  replicas: 1
+frontend:
+  replicas: 1
