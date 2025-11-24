@@ -38,15 +38,16 @@ pipeline {
         }
 
         stage('Build Backend') {
-            steps {
-                sh '''
-                echo "Installing backend dependencies..."
-                cd backend
-                source /opt/backend-venv/bin/activate
-                pip install -r requirements.txt
-                '''
-            }
-        }
+                steps {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "Installing backend dependencies..."
+                    cd backend
+                    source /opt/backend-venv/bin/activate
+                    pip install -r requirements.txt
+                    '''
+                }
+                }
 
         stage('Docker Build & Push') {
             steps {
