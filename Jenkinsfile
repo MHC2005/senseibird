@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'agustinpose/devsecops-agent:latest'
+            args '-u root -v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
     options {
         timestamps()
     }
@@ -71,13 +76,16 @@ pipeline {
 
         stage('Helm Deploy') {
             steps {
-                sh '''
-                echo "Deploying to Kubernetes with Helm..."
-                helm upgrade --install senseibird ./helm \
-                  --namespace senseibird \
-                  --create-namespace \
-                  --values helm/values.yaml
-                '''
+                withCredentials([file(credentialsId: 'KUBECONFIG_PORTABLE', variable: 'KCFG')]) {
+                    sh '''
+                    echo "Deploying to Kubernetes with Helm..."
+                    export KUBECONFIG="$KCFG"
+                    helm upgrade --install senseibird ./helm \
+                      --namespace senseibird \
+                      --create-namespace \
+                      --values helm/values.yaml
+                    '''
+                }
             }
         }
 
