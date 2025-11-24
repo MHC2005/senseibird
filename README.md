@@ -4,7 +4,7 @@
 SenseiBird es una aplicacion web para aprendizaje de idiomas que combina un frontend Next.js y un backend FastAPI.
 ---
 
-## 1. Contenerizaci?n (Docker)
+## 1. Contenerizacion (Docker)
 
 ```powershell
 # Cambiar daemon a Minikube (PowerShell)
@@ -27,12 +27,12 @@ minikube image load senseibird-frontend:1.0.2
 minikube image load senseibird-backend:1.0.0
 ```
 
-### 1 Buenas practicas aplicadas
+### 1.1 Buenas practicas aplicadas
 
 - **Dockerfiles dedicados** (`Dockerfile` y `backend/Dockerfile`) estructurados en m?ltiples etapas (builder + runtime) para reducir el tamaño final.
 - **Usuarios no privilegiados**: cada contenedor crea el usuario `app` y finaliza con `USER app`, cumpliendo la politica no root exigida por Kyverno.
 - **Versiones fijas**: se usan tags explicitos (`1.0.2`, `1.0.0`), nunca `latest`.
-- **Optimizaci?n de capas**: s?lo se copian artefactos necesarios (build de Next.js, dependencias Python ya compiladas) desde la etapa builder.
+- **Optimizacion de capas**: solo se copian artefactos necesarios (build de Next.js, dependencias Python ya compiladas) desde la etapa builder.
 
 ### 1.2 Reportes de calidad
 
@@ -40,7 +40,7 @@ minikube image load senseibird-backend:1.0.0
 - `reports/analisis_img_backend.md`
 - `reports/analisis_calidad_imagenes.md` (resumen consolidado)
 
-Cada informe resume tama?o total, n?mero de capas y oportunidades de mejora detectadas por **Trivy** (vulnerabilidades), **Snyk** (dependencias) y **Dive** (capas).
+Cada informe resume tamaño total, numero de capas y oportunidades de mejora detectadas por **Trivy** (vulnerabilidades), **Snyk** (dependencias) y **Dive** (capas).
 ---
 
 ## 2. Orquestacion y despliegue (Kubernetes + Helm)
@@ -58,7 +58,6 @@ helm upgrade --install senseibird ./helm `
   --create-namespace `
   --values helm/values.yaml
 
-# Para prod/dev
 helm upgrade --install senseibird ./helm `
   --namespace senseibird `
   --create-namespace `
@@ -80,7 +79,7 @@ Archivo: `Jenkinsfile`
 
 ### 4.1 Instrumentacion del backend
 
-`backend/app/main.py` expone `GET /metrics` mediante `prometheus_fastapi_instrumentator` e incluye la m?trica de negocio `senseibird_updates_total`. Para pruebas locales:
+`backend/app/main.py` expone `GET /metrics` mediante `prometheus_fastapi_instrumentator` e incluye la metrica de negocio `senseibird_updates_total`. Para pruebas locales:
 
 ```powershell
 kubectl port-forward svc/senseibird-api -n senseibird 8000:8000
@@ -115,7 +114,7 @@ Importar via Grafana ? Dashboards ? Import ? Upload JSON.
 
 ## 5. Seguridad integrada (DevSecOps)
 
-### 5.1 Analisis est?tico de codigo (Semgrep)
+### 5.1 Analisis estatico de codigo (Semgrep)
 
 - Reglas en `semgrep_rules.yaml`.
 - Ejecucion: `semgrep scan --config=semgrep_rules.yaml .`
@@ -135,7 +134,7 @@ Pol?ticas en `k8s/policies/`:
 3. `disallow-root.yaml`
 4. `readOnly.yaml`
 
-### 5.4 Monitoreo de seguridad en tiempo de ejecuci?n (Falco)
+### 5.4 Monitoreo de seguridad en tiempo de ejecucion (Falco)
 
 - Valores: `k8s/falco/values-minikube.yaml` (driver `modern-bpf`, anotacion `kyverno.io/ignore`).
 - Instalaci?n: `helm upgrade --install falco falcosecurity/falco --namespace falco --values k8s/falco/values-minikube.yaml`
@@ -143,4 +142,4 @@ Pol?ticas en `k8s/policies/`:
 - Log: `/reports/falco-event.log` registra la alerta ?A shell was spawned?? y ?Read sensitive file untrusted?, con una breve descripci?n manual.
 
 
-## Desarrollado por Mateo Hern?ndez y Agust?n Pose
+## Desarrollado por Mateo Hern?ndez y Agustin Pose
