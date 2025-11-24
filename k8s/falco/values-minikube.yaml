@@ -1,0 +1,58 @@
+﻿# Valores base para desplegar Falco en Minikube usando Helm
+# Se usa el driver modern-bpf para evitar compilar modulos eBPF en kernels de WSL/Docker Desktop.
+driver:
+  enabled: true
+  kind: modern-bpf
+
+podAnnotations:
+  kyverno.io/ignore: "true"
+
+falco:
+  jsonOutput: true
+  jsonIncludeOutputProperty: true
+  timeFormatISO8601: true
+  priority: notice
+  bufferedOutputs: true
+  logLevel: info
+  httpOutput:
+    enabled: false
+  grpc:
+    enabled: true
+    unixSocketPath: /var/run/falco.sock
+  grpcOutput:
+    enabled: true
+  webserver:
+    enabled: false
+
+falcosidekick:
+  enabled: false
+
+auditLog:
+  enabled: true
+  dynamicBackend:
+    enabled: true
+    url: ""
+  k8sAuditConfig:
+    priority: debug
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 400m
+    memory: 512Mi
+
+serviceAccount:
+  create: true
+  name: falco
+
+daemonset:
+  extraVolumes:
+    - name: senseibird-falco-rules
+      configMap:
+        name: falco-senseibird-rules
+  extraVolumeMounts:
+    - name: senseibird-falco-rules
+      mountPath: /etc/falco/rules.d/senseibird
+      readOnly: true
