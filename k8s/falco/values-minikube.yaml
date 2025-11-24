@@ -1,0 +1,23 @@
+﻿# Valores base para desplegar Falco en Minikube usando Helm.
+# Se usa el driver modern-bpf para evitar compilar modulos eBPF en kernels WSL/Docker Desktop.
+driver:
+  enabled: true
+  kind: modern-bpf
+
+podAnnotations:
+  kyverno.io/ignore: "true"
+
+falcosidekick:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 400m
+    memory: 512Mi
+
+serviceAccount:
+  create: true
+  name: falco
