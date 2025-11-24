@@ -67,5 +67,17 @@ pipeline {
             }
         }
 
+        stage('Helm Deploy') {
+            steps {
+                sh '''
+                echo "Deploying to Kubernetes with Helm..."
+                helm upgrade --install senseibird ./helm \
+                  --namespace senseibird \
+                  --create-namespace \
+                  --values helm/values.yaml
+                '''
+            }
+        }
+
     }
 }
