@@ -42,7 +42,8 @@ pipeline {
                 sh '''
                 echo "Installing backend dependencies..."
                 cd backend
-                pip install -r requirements.txt || true
+                source /opt/backend-venv/bin/activate
+                pip install -r requirements.txt
                 '''
             }
         }
