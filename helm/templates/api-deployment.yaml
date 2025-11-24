@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: senseibird-api:dev
-          imagePullPolicy: IfNotPresent
+          image: senseibird-api:1.0.0
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           readinessProbe:

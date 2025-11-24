@@ -44,9 +44,8 @@ app.add_middleware(
 
 senseibird_updates_total = Counter(
     "senseibird_updates_total",
-    "Numero total de actualizaciones de estadisticas realizadas en SenseiBird"
+    "Número total de actualizaciones de estadísticas realizadas en SenseiBird"
 )
-Instrumentator().instrument(app).expose(app)
 
 @app.get("/health")
 def health():
@@ -80,7 +79,6 @@ def set_stats(uid: str, payload: Stats):
             row.xp = payload.xp
             row.streak = payload.streak
         db.commit()
-        senseibird_updates_total.inc()
         return {"ok": True}
     finally:
         db.close()

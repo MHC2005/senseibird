@@ -34,6 +34,8 @@ COPY package*.json ./
 
 RUN npm install --omit=dev
 
+RUN mkdir -p .next/cache && chown -R appuser:appgroup /app
+
 USER appuser
 
 EXPOSE 3000

@@ -1,0 +1,27 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: restrict-root
+      match:
+        resources:
+          kinds:
+            - Pod
+            - Deployment
+      exclude:
+        resources:
+          namespaces:
+            - falco
+          names:
+            - falco-test
+      validate:
+        message: "Los contenedores no pueden ejecutarse como root."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
