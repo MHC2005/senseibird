@@ -1,141 +1,146 @@
-# SenseiBird – CI/CD, Kubernetes y Observabilidad
 
-SenseiBird es una aplicación web para aprendizaje de idiomas que combina un frontend Next.js y un backend FastAPI. Este repositorio contiene todo el flujo DevOps:
+# SenseiBird ? CI/CD, Kubernetes y Observabilidad
 
-- **Pipeline Jenkins** con análisis estático y build/push de imágenes.
-- **Dockerfiles** listos para frontend y backend.
-- **Manifiestos de Kubernetes** para desplegar en Minikube con estrategia Blue/Green.
-- **Stack de monitoreo** compuesto por Prometheus + Grafana, más un dashboard exportado.
-
+SenseiBird es una aplicacion web para aprendizaje de idiomas que combina un frontend Next.js y un backend FastAPI.
 ---
 
-## 1. Pipeline Jenkins
-
-Archivo: `Jenkinsfile`
-
-| Stage | Descripción |
-| --- | --- |
-| `Semgrep Static Analysis` | Ejecuta `semgrep scan --config=semgrep_rules.yaml .` |
-| `Snyk Dependency Scan` | Usa el token `SNYK_TOKEN` para `snyk test --all-projects` |
-| `Build Frontend` | Instala dependencias y corre `npm run build` |
-| `Build Backend` | Instala requirements del API (`pip install -r backend/requirements.txt`) |
-| `Docker Build & Push` | Login en Docker Hub (`DOCKER_HUB` creds), `docker build` y `docker push` de la imagen `senseibird:latest` |
-
-El pipeline corre en cualquier agente Jenkins y deja trazas con `timestamps()` para facilitar auditoría.
-
----
-
-## 2. Construcción de imágenes locales
+## 1. Contenerizaci?n (Docker)
 
 ```powershell
 # Cambiar daemon a Minikube (PowerShell)
 minikube -p minikube docker-env --shell powershell | Invoke-Expression
 
 # Frontend
-docker build -t senseibird-web:1.0.0 .
+docker build -t senseibird-frontend:1.0.2 .
 
 # Backend
-docker build -t senseibird-api:1.0.0 -f backend/Dockerfile backend
+docker build -t senseibird-backend:1.0.0 -f backend/Dockerfile backend
 
 # Volver al daemon original
 minikube docker-env --shell powershell -u | Invoke-Expression
 ```
 
-Si trabajás con Docker fuera de Minikube, luego ejecutá:
+Si se construye fuera de Minikube, luego hay que publicar las im?genes dentro del cl?ster:
+
 ```
-minikube image load senseibird-web:1.0.0
-minikube image load senseibird-api:1.0.0
+minikube image load senseibird-frontend:1.0.2
+minikube image load senseibird-backend:1.0.0
 ```
 
+### 1 Buenas practicas aplicadas
+
+- **Dockerfiles dedicados** (`Dockerfile` y `backend/Dockerfile`) estructurados en m?ltiples etapas (builder + runtime) para reducir el tamaño final.
+- **Usuarios no privilegiados**: cada contenedor crea el usuario `app` y finaliza con `USER app`, cumpliendo la politica no root exigida por Kyverno.
+- **Versiones fijas**: se usan tags explicitos (`1.0.2`, `1.0.0`), nunca `latest`.
+- **Optimizaci?n de capas**: s?lo se copian artefactos necesarios (build de Next.js, dependencias Python ya compiladas) desde la etapa builder.
+
+### 1.2 Reportes de calidad
+
+- `reports/analisis_img_frontend.md`
+- `reports/analisis_img_backend.md`
+- `reports/analisis_calidad_imagenes.md` (resumen consolidado)
+
+Cada informe resume tama?o total, n?mero de capas y oportunidades de mejora detectadas por **Trivy** (vulnerabilidades), **Snyk** (dependencias) y **Dive** (capas).
 ---
 
-## 3. Despliegue en Kubernetes (`namespace: senseibird`)
+## 2. Orquestacion y despliegue (Kubernetes + Helm)
 
-1. `kubectl apply -f k8s/namespace.yaml`
-2. Backend: `kubectl apply -f k8s/api-deployment.yaml` + `k8s/api-service.yaml`
-3. Frontend: `kubectl apply -f k8s/deployment.yaml` + `k8s/service.yaml`
-4. Verifica: `kubectl get pods,svc -n senseibird`
-5. Acceso al front: `minikube service senseibird-svc -n senseibird --url` (NodePort 31000)
+El chart vive en `helm/` y contiene plantillas para Deployments, Services, ConfigMaps y el stack de monitoreo (`helm/templates/monitoring.yaml`). Parametrizaci?n por entorno:
 
-### Estrategia Blue/Green
+- `helm/values.yaml`: valores por defecto.
+- `helm/values-dev.yaml` y `helm/values-prod.yaml`: overrides (r?plicas, recursos, im?genes, puertos).
 
-- Deploys: `k8s/deployment-blue.yaml` y `k8s/deployment-green.yaml` (labels `track=blue/green`).
-- El Service (`k8s/service.yaml`) apunta al track activo; cambiar el selector rota el tráfico sin downtime.
-- Comandos útiles:
-  ```bash
-  kubectl -n senseibird set image deploy/senseibird-web-blue web=senseibird:blue
-  kubectl -n senseibird set image deploy/senseibird-web-green web=senseibird:green
-  kubectl -n senseibird rollout restart deploy/senseibird-web-green
-  kubectl -n senseibird rollout status deploy/senseibird-web-green
-  ```
+### 2.1 Instalacion / actualizacion
 
+```powershell
+helm upgrade --install senseibird ./helm `
+  --namespace senseibird `
+  --create-namespace `
+  --values helm/values.yaml
+
+# Para prod/dev
+helm upgrade --install senseibird ./helm `
+  --namespace senseibird `
+  --create-namespace `
+  --values helm/values-prod.yaml
+```
+## 3. Integracion y entrega continua (Jenkins)
+
+Archivo: `Jenkinsfile`
+
+| Stage | Descripcion |
+| --- | --- |
+| `Semgrep Static Analysis` | `semgrep scan --config=semgrep_rules.yaml .` (findings criticos fallan el pipeline). |
+| `Snyk Dependency Scan` | `snyk test --all-projects` usando `SNYK_TOKEN`; CVE criticas abortan el build. |
+| `Docker Build & Push` | `docker build` + `docker push` de las imagenes versionadas usando credenciales `DOCKER_HUB`. |
+| `Helm Deploy` | `helm upgrade --install senseibird ./helm --namespace senseibird --create-namespace`. |
 ---
 
-## 4. Backend FastAPI y métricas
+## 4. Monitoreo y observabilidad (Prometheus + Grafana)
 
-`backend/app/main.py` expone:
+### 4.1 Instrumentacion del backend
 
-- `GET /health`
-- `GET/POST /stats/{uid}` (persistencia SQLite)
-- `GET /metrics` (instrumentado con `prometheus_fastapi_instrumentator`)
-- Métrica de negocio `senseibird_updates_total` que aumenta en cada POST.
+`backend/app/main.py` expone `GET /metrics` mediante `prometheus_fastapi_instrumentator` e incluye la m?trica de negocio `senseibird_updates_total`. Para pruebas locales:
 
-Para probar rápidamente:
 ```powershell
 kubectl port-forward svc/senseibird-api -n senseibird 8000:8000
 ```
-Luego usar Postman/curl contra `http://localhost:8000/...`.
 
----
-
-## 5. Prometheus + Grafana (namespace `monitoring`)
-
-### Prometheus (Helm → `monitoring.prometheus`)
-
-Los recursos de Prometheus se generan desde `helm/templates/monitoring.yaml` y se parametrizan en `values*.yaml` bajo `monitoring.prometheus`.
+### 4.2 Prometheus (Helm `monitoring.prometheus`)
 
 - ConfigMap con `scrape_configs` para `senseibird-api`, kubelet y kubelet-cadvisor.
-- `ServiceAccount` + RBAC y `Deployment` con la imagen `prom/prometheus:v2.52.0`.
-- Service NodePort `30900` (configurable vía `monitoring.prometheus.nodePort`).
-- Despliegue/actualización: `helm upgrade --install senseibird ./helm --namespace senseibird --create-namespace` (Prometheus se crea igual en el namespace `monitoring` definido en los values).
+- `ServiceAccount` + RBAC + Deployment (`prom/prometheus:v2.52.0`).
+- Service NodePort configurable (`monitoring.prometheus.nodePort`, por defecto 30900).
 - Acceso: `minikube service prometheus -n monitoring --url`
 
-### Grafana (Helm → `monitoring.grafana`)
+### 4.3 Grafana (Helm  `monitoring.grafana`)
 
 - Secret `grafana-admin` y ConfigMap `grafana-datasources` gestionados por el chart.
-- Deployment `grafana/grafana:10.4.2` con datasource apuntando al Service de Prometheus.
-- Service NodePort `32000` configurable en `monitoring.grafana.nodePort`.
+- Deployment `grafana/grafana:10.4.2` con datasource apuntando a Prometheus.
+- Service NodePort configurable (`monitoring.grafana.nodePort`, por defecto 32000).
 - Acceso: `minikube service grafana -n monitoring --url`
 
-### Dashboard (`grafana/dashboard.json`)
+### 4.4 Dashboard
 
-Este JSON contiene el tablero exigido en el práctico, con al menos:
+El archivo `grafana/dashboard.json` contiene el tablero exigido con:
 
-1. **Número de peticiones procesadas (RPS)**: `sum(rate(http_requests_total{handler!="/metrics"}[5m])) by (handler,method)`
-2. **Latencia promedio / p95**: `rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])` o `histogram_quantile`.
-3. **Uso de CPU/Mem por pod**: `sum(rate(container_cpu_usage_seconds_total{pod=~"senseibird-.*"}[5m])) by (pod)` y `container_memory_usage_bytes`.
-4. **Métrica de negocio**: `senseibird_updates_total` y su rate.
+1. N?mero de peticiones procesadas (RPS) usando `http_requests_total`.
+2. Latencia promedio / p95 (`http_request_duration_seconds`).
+3. Uso de CPU/Mem por pod (`container_cpu_usage_seconds_total`, `container_memory_usage_bytes`).
+4. M?trica de negocio `senseibird_updates_total`.
 
-Importá el archivo en Grafana (Dashboards → Import → Upload JSON) y seleccioná el datasource “Prometheus”.
+Importar via Grafana ? Dashboards ? Import ? Upload JSON.
 
 ---
 
-## 6. Verificación & Troubleshooting
+## 5. Seguridad integrada (DevSecOps)
 
-- **Pods sin endpoints**: revisá labels vs `selector` en `k8s/service.yaml`.
-- **ErrImagePull**: asegurar que la imagen existe en el daemon de Minikube (`minikube image load ...`).
-- **Grafana “No data”**: confirmar targets en Prometheus (`Status → Targets`) y generar tráfico con Postman.
-- **Reiniciar deployments tras rebuild**:
-  ```powershell
-  kubectl rollout restart deploy/senseibird-web -n senseibird
-  kubectl rollout restart deploy/senseibird-api -n senseibird
-  kubectl rollout restart deploy/prometheus -n monitoring
-  kubectl rollout restart deploy/grafana -n monitoring
-  ```
+### 5.1 Analisis est?tico de codigo (Semgrep)
 
-Con este set-up se cumple el práctico: CI/CD con Jenkins, despliegue containerizado en Kubernetes (Blue/Green), y observabilidad completa con Prometheus + Grafana y el dashboard exportado en `grafana/dashboard.json`.
+- Reglas en `semgrep_rules.yaml`.
+- Ejecucion: `semgrep scan --config=semgrep_rules.yaml .`
+- Evidencia: `/reports/semgrep-report.txt`. Resultado critico = pipeline detenido.
+
+### 5.2 Escaneo de dependencias (Snyk)
+
+- `snyk test --all-projects` para Node + Python (requiere `SNYK_TOKEN`).
+- Evidencia: `/reports/snyk-report.txt`, con observaciones y remediaciones sugeridas.
+
+### 5.3 Politicas de seguridad en Kubernetes (Kyverno)
+
+Pol?ticas en `k8s/policies/`:
+
+1. `disallow-latest.yaml`
+2. `require-resources.yaml`
+3. `disallow-root.yaml`
+4. `readOnly.yaml`
+
+### 5.4 Monitoreo de seguridad en tiempo de ejecuci?n (Falco)
+
+- Valores: `k8s/falco/values-minikube.yaml` (driver `modern-bpf`, anotacion `kyverno.io/ignore`).
+- Instalaci?n: `helm upgrade --install falco falcosecurity/falco --namespace falco --values k8s/falco/values-minikube.yaml`
+- Prueba: `kubectl -n senseibird run falco-trigger --rm -it --image=alpine --restart=Never --command -- sh -c "cat /etc/shadow >/tmp/out"`
+- Log: `/reports/falco-event.log` registra la alerta ?A shell was spawned?? y ?Read sensitive file untrusted?, con una breve descripci?n manual.
 
 
-
-
-## Desarrollado por Mateo Hernández y Agustín Pose
+## Desarrollado por Mateo Hern?ndez y Agust?n Pose
