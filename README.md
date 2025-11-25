@@ -191,14 +191,6 @@ Los reportes de Semgrep/Snyk se guardan en `reports/` para auditorías posterior
 
 ---
 
-## Próximos pasos sugeridos
-
-1. Automatizar tests unitarios (Next.js + FastAPI) y sumarlos como stage previo al build.
-2. Subir las imágenes a un registry interno y reemplazar los tags locales por `DOCKER_USER/senseibird:<tag>`.
-3. Publicar el dashboard en Grafana Cloud o en una carpeta versionada de dashboards para exportarlo fácil.
-
----
-
 ## Autores
 
 Proyecto trabajado por Mateo Hernández y Agustín Pose.
