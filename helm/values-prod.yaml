@@ -1,8 +1,17 @@
-backend:
-  replicas: 3
 frontend:
-  replicas: 3
+  image: "senseibird:dev"
+  replicas: 1
+  port: 3000
+
+backend:
+  image: "senseibird-api:dev"
+  replicas: 1
+  port: 8000
+
 resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
   limits:
     cpu: "500m"
     memory: "512Mi"

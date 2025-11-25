@@ -20,7 +20,7 @@ config:
   DATABASE_URL: "sqlite:///app.db"
 
 monitoring:
-  enabled: true
+  enabled: false
   namespace: monitoring
   prometheus:
     enabled: true

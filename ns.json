@@ -1,0 +1,21 @@
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "creationTimestamp": "2025-11-25T01:43:57Z",
+        "labels": {
+            "kubernetes.io/metadata.name": "senseibird"
+        },
+        "name": "senseibird",
+        "resourceVersion": "11848",
+        "uid": "461f8a25-cc4e-47fb-9205-df4a601fc90e"
+    },
+    "spec": {
+        "finalizers": [
+            "kubernetes"
+        ]
+    },
+    "status": {
+        "phase": "Active"
+    }
+}
