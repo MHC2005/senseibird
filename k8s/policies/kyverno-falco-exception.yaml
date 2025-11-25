@@ -1,0 +1,27 @@
+# Kyverno PolicyException para permitir que Falco corra con los privilegios que necesita
+apiVersion: kyverno.io/v2alpha1
+kind: PolicyException
+metadata:
+  name: falco-daemonset-exception
+  namespace: kyverno
+spec:
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+          namespaces:
+            - falco
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: falco
+  exceptions:
+    - policyName: disallow-root
+      ruleNames:
+        - restrict-root
+    - policyName: require-readonly-rootfs
+      ruleNames:
+        - enforce-readonly-rootfs
+    - policyName: require-resources
+      ruleNames:
+        - check-resources

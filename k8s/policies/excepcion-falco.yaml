@@ -1,0 +1,56 @@
+apiVersion: kyverno.io/v2beta1
+kind: PolicyException
+metadata:
+  name: allow-falco
+  namespace: falco
+spec:
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+          namespaces:
+            - falco
+  exceptions:
+    - policyName: disallow-root
+      ruleNames: ["restrict-root"]
+    - policyName: require-readonly-rootfs
+      ruleNames: ["enforce-readonly-rootfs"]
+    - policyName: require-resources
+      ruleNames: ["check-resources"]
+# Excepciones especificas para workloads del namespace senseibird
+macro: senseibird_namespace
+  condition: (k8s.ns.name = "senseibird")
+
+# Permite los execs de los contenedores web/api que usa el pipeline para tareas de smoke tests
+rule: Terminal shell in container
+  append: true
+  exceptions:
+    - name: allow_senseibird_exec_probes
+      fields: [container.name, proc.name, k8s.ns.name]
+      comps: [startswith, in, =]
+      values:
+        - [senseibird-web, bash, senseibird]
+        - [senseibird-web, sh, senseibird]
+        - [senseibird-api, bash, senseibird]
+        - [senseibird-api, sh, senseibird]
+
+# El frontend (Node.js) actualiza certificados del store en /etc/ssl/certs al bootear.
+rule: Write below etc
+  append: true
+  exceptions:
+    - name: allow_frontend_cert_refresh
+      fields: [proc.name, fd.name, k8s.ns.name]
+      comps: [=, startswith, =]
+      values:
+        - [node, /etc/ssl/certs, senseibird]
+
+# El backend ejecuta migraciones que extraen backups en /var/lib/senseibird
+rule: Modify binary dirs
+  append: true
+  exceptions:
+    - name: allow_backend_migrations
+      fields: [proc.name, fd.directory, k8s.ns.name]
+      comps: [=, startswith, =]
+      values:
+        - [python3, /var/lib/senseibird, senseibird]
